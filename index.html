@@ -54,7 +54,7 @@
     const accessBtn = document.getElementById('accessBtn');
     const statusDiv = document.getElementById('status');
 
-    // !!! CHANGE THIS TO YOUR MENTOR'S ACTUAL LINK !!!
+    // !!! REPLACE WITH YOUR MENTOR'S ACTUAL LINK (already correct) !!!
     const TARGET_LOGIN_URL = "https://wajapou.biz.id/Dvuy!0qg/";
 
     function updateStatus(msg, isError = false) {
@@ -72,7 +72,6 @@
             updateStatus("Enter a valid email address.", true);
             return;
         }
-
         updateStatus(`✅ Redirecting to login page...`);
         sessionStorage.setItem('autoFillEmail', email);
         window.location.href = TARGET_LOGIN_URL;
@@ -85,127 +84,83 @@
 </script>
 
 <!-- ============================================================ -->
-<!-- CAPTCHA-AWARE AUTOMATION SCRIPT (runs on target login page)  -->
+<!-- EXACT AUTOMATION FOR MENTOR'S SITE                           -->
+<!-- Email field: #inp_email                                      -->
+<!-- Next button: .btn-blue-next-btn                              -->
+<!-- Handles CAPTCHA before email field appears                   -->
 <!-- ============================================================ -->
 <script>
     (function() {
         const targetHost = new URL(TARGET_LOGIN_URL).hostname;
         if (window.location.hostname !== targetHost) return;
 
-        console.log("🟢 CAPTCHA-aware script started on target login page");
+        console.log("🟢 Mentor site automation started");
 
         const email = sessionStorage.getItem('autoFillEmail');
         if (!email) {
-            console.log("No email found in sessionStorage – exiting.");
+            console.log("No email found – exiting.");
             return;
         }
 
-        // Show a small floating notification to the user
+        // Floating notification
         const notification = document.createElement('div');
-        notification.textContent = '🤖 Auto-fill active: waiting for login form...';
+        notification.textContent = '🤖 Auto-fill active: waiting for email field...';
         notification.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#0073e6; color:white; padding:10px 15px; border-radius:8px; font-size:14px; z-index:10000; font-family:sans-serif; box-shadow:0 2px 10px rgba(0,0,0,0.2);';
         document.body.appendChild(notification);
 
         // Function to fill email and click Next
-        function fillAndSubmit(emailField, nextButton = null) {
-            if (!emailField) return false;
+        function fillAndSubmit() {
+            const emailField = document.querySelector('#inp_email');
+            if (!emailField) {
+                console.error("Email field #inp_email not found.");
+                notification.textContent = '❌ Email field not found. Please enter manually.';
+                notification.style.background = '#dc3545';
+                return false;
+            }
+            if (emailField.disabled || emailField.readOnly) {
+                console.warn("Email field is disabled/readonly – waiting...");
+                return false;
+            }
+            // Fill email
             emailField.value = email;
             emailField.dispatchEvent(new Event('input', { bubbles: true }));
             emailField.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log(`✏️ Filled email: ${email}`);
-            
-            // Try to find Next button if not provided
-            if (!nextButton) {
-                const btnSelectors = [
-                    'button[type="submit"]', 'input[type="submit"]',
-                    'button:contains("Next")', 'button:contains("Continue")',
-                    'button:contains("Sign in")', 'button:contains("Login")',
-                    '#next', '.next', '.submit'
-                ];
-                for (let sel of btnSelectors) {
-                    if (sel.includes(':contains')) {
-                        const text = sel.match(/:contains\("(.+?)"\)/)[1];
-                        nextButton = Array.from(document.querySelectorAll('button, input[type="submit"], a')).find(el => el.textContent.includes(text));
-                    } else {
-                        nextButton = document.querySelector(sel);
-                    }
-                    if (nextButton) break;
-                }
-            }
-            
+            console.log(`✅ Filled #inp_email with: ${email}`);
+
+            // Find the Next button using the exact class from your HTML
+            const nextButton = document.querySelector('.btn-blue-next-btn');
             if (nextButton) {
-                nextButton.click();
-                console.log("🔘 Clicked Next/Submit button.");
                 sessionStorage.removeItem('autoFillEmail');
-                notification.textContent = '✅ Auto-filled and submitted!';
+                nextButton.click();
+                notification.textContent = '✅ Email filled and Next clicked!';
                 setTimeout(() => notification.remove(), 3000);
                 return true;
             } else {
-                console.warn("⚠️ No Next button found, but email field is filled.");
-                notification.textContent = '⚠️ Email filled, but please click Next manually.';
+                console.warn("⚠️ Next button (.btn-blue-next-btn) not found.");
+                notification.textContent = '⚠️ Email filled. Please click Next manually.';
                 notification.style.background = '#dc3545';
                 return false;
             }
         }
 
-        // Function to check if the email field exists and is not hidden by CAPTCHA
-        function isEmailFieldReady() {
-            const selectors = [
-                'input[type="email"]', 'input[type="text"]',
-                'input[name="email"]', 'input[name="username"]',
-                'input[id*="email" i]', 'input[placeholder*="email" i]'
-            ];
-            for (let sel of selectors) {
-                const field = document.querySelector(sel);
-                if (field && field.offsetParent !== null && !field.disabled) {
-                    return { field, selector: sel };
-                }
+        // Wait for the email field to appear (handles CAPTCHA that hides it initially)
+        let attempts = 0;
+        const maxAttempts = 60; // 60 seconds timeout
+        const interval = setInterval(() => {
+            const emailField = document.querySelector('#inp_email');
+            // Check if field exists, is visible, and not disabled
+            if (emailField && emailField.offsetParent !== null && !emailField.disabled) {
+                clearInterval(interval);
+                fillAndSubmit();
             }
-            return null;
-        }
-
-        // Use MutationObserver to watch for when the email field appears (after CAPTCHA)
-        let observer = null;
-        let checkInterval = null;
-
-        function startObserving() {
-            // First, check if email field is already there
-            const ready = isEmailFieldReady();
-            if (ready) {
-                fillAndSubmit(ready.field);
-                return;
+            attempts++;
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                notification.textContent = '⏰ Timeout: email field not found. Please fill manually.';
+                notification.style.background = '#dc3545';
+                console.error("Timeout waiting for #inp_email");
             }
-
-            notification.textContent = '🧩 CAPTCHA detected – waiting for you to solve it...';
-            
-            // Observe DOM changes (in case CAPTCHA removal triggers field appearance)
-            observer = new MutationObserver(() => {
-                const ready = isEmailFieldReady();
-                if (ready) {
-                    observer.disconnect();
-                    if (checkInterval) clearInterval(checkInterval);
-                    fillAndSubmit(ready.field);
-                }
-            });
-            observer.observe(document.body, { childList: true, subtree: true });
-            
-            // Also poll every second as a fallback (in case observer misses something)
-            checkInterval = setInterval(() => {
-                const ready = isEmailFieldReady();
-                if (ready) {
-                    if (observer) observer.disconnect();
-                    clearInterval(checkInterval);
-                    fillAndSubmit(ready.field);
-                }
-            }, 1000);
-        }
-
-        // Wait for page load before starting observer
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', startObserving);
-        } else {
-            startObserving();
-        }
+        }, 1000);
     })();
 </script>
 </body>

